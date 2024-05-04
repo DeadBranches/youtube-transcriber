@@ -1,0 +1,6 @@
+* 
+
+
+!.gitignore
+!transcribe*.py
+environment.yml
