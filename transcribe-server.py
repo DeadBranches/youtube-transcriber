@@ -114,19 +114,21 @@ async def transcribe_video(url: str, request: Request):
         error_code = ydl.download([url])
         # Print the last item in audio_file list
 
-        model = load_whisper_model()
+        model = load_transformers_model() 
         if not os.path.exists(audio_file[-1]):
             raise FileNotFoundError(f"Audio file {audio_file[-1]} not found.")
         sound = AudioSegment.from_file(audio_file[-1])
         sound.export(audio_file[-1], format="wav", bitrate="16k")
-        transcript = model.transcribe(audio_file[-1])
+        
+        transcript = model(audio_file[-1])
+        #transcript = model.transcribe(audio_file[-1])
         # result = json.dumps(transcript)
         result = transcript["text"]
 
         # The model seems to stay in memory afterwards.
-        del model
-        torch.cuda.empty_cache()
-        gc.collect()
+        #   del model
+        #torch.cuda.empty_cache()
+        #gc.collect()
         # https://stackoverflow.com/questions/70508960/how-to-free-gpu-memory-in-pytorch
 
         # pipe = load_transformers_model()
@@ -137,4 +139,4 @@ async def transcribe_video(url: str, request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8669)
+    uvicorn.run(app, host="0.0.0.0", port=8669)
