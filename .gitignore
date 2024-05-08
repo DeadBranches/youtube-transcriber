@@ -3,4 +3,5 @@
 
 !.gitignore
 !transcribe*.py
-environment.yml
+!environment.yml
+!config.ini.example

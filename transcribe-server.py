@@ -1,3 +1,4 @@
+import configparser
 import gc
 import json
 import os
@@ -8,15 +9,18 @@ from fastapi import FastAPI, Request
 from pydub import AudioSegment
 
 # Optional: Specify the location of the directory `Whisper` containing models
-WHISPER_CACHE = "F:/C/cache"
+SETTINGS_FILE = "settings.ini"
+config = configparser.ConfigParser()
+config.read(SETTINGS_FILE)
+WHISPER_CACHE = config.get("whisper", "cache_directory")
 
 
 def load_transformers_model(model_name: str = "openai/whisper-large-v3"):
-    """ Load a a whisper model for inference using the faster transformers library. """
+    """Load a a whisper model for inference using the faster transformers library."""
     from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
     if WHISPER_CACHE:
-        os.environ["XDG_CACHE_HOME"] = WHISPER_CACHE
+        os.environ["TRANSFORMERS_CACHE"] = WHISPER_CACHE
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
@@ -43,6 +47,7 @@ def load_transformers_model(model_name: str = "openai/whisper-large-v3"):
     )
     return pipe
 
+
 # TODO: Remove hard coded location
 def load_whisper_model(model_name: str = "F:/C/cache/whisper/large-v2.pt"):
     import whisper
@@ -61,15 +66,14 @@ app = FastAPI()
 
 @app.get("/transcribe/{url:path}")
 async def transcribe_video(url: str, request: Request):
-""" Takes a fully qualified URL as path argument.
-    Example: http://localhost/transcribe/http://www.youtube.com/watch?v=f3f3f3f3f3  """
-    
+    """Takes a fully qualified URL as path argument.
+    Example: http://localhost/transcribe/http://www.youtube.com/watch?v=f3f3f3f3f3"""
+
     query = request.url.query
     if query:
         url += "?" + query
     # https://stackoverflow.com/a/74555405
-    
-    
+
     audio_file = list()
 
     def postprocessor_event(event_info):
@@ -118,13 +122,13 @@ async def transcribe_video(url: str, request: Request):
         transcript = model.transcribe(audio_file[-1])
         # result = json.dumps(transcript)
         result = transcript["text"]
-        
+
         # The model seems to stay in memory afterwards.
         del model
         torch.cuda.empty_cache()
         gc.collect()
         # https://stackoverflow.com/questions/70508960/how-to-free-gpu-memory-in-pytorch
-        
+
         # pipe = load_transformers_model()
         # result = pipe(audio_file[-1])
     return {"result": result}
