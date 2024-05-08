@@ -8,6 +8,8 @@ import yt_dlp
 from fastapi import FastAPI, Request
 from pydub import AudioSegment
 
+import whisper_processor
+
 # Optional: Specify the location of the directory `Whisper` containing models
 SETTINGS_FILE = "settings.ini"
 config = configparser.ConfigParser()
@@ -113,30 +115,37 @@ async def transcribe_video(url: str, request: Request):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         error_code = ydl.download([url])
         # Print the last item in audio_file list
-
-        model = load_transformers_model() 
         if not os.path.exists(audio_file[-1]):
             raise FileNotFoundError(f"Audio file {audio_file[-1]} not found.")
         sound = AudioSegment.from_file(audio_file[-1])
         sound.export(audio_file[-1], format="wav", bitrate="16k")
-        
+
+        try:
+            result = whisper_processor.process_audio(audio_file[-1], "base.en")
+        except Exception as e:
+            return f"Error: {e}"
+        """
+        model = load_transformers_model() 
+
+
         transcript = model(audio_file[-1])
+        result = transcript["text"]
+        
+        
         #transcript = model.transcribe(audio_file[-1])
         # result = json.dumps(transcript)
-        result = transcript["text"]
 
         # The model seems to stay in memory afterwards.
         #   del model
         #torch.cuda.empty_cache()
         #gc.collect()
         # https://stackoverflow.com/questions/70508960/how-to-free-gpu-memory-in-pytorch
-
-        # pipe = load_transformers_model()
-        # result = pipe(audio_file[-1])
     return {"result": result}
+        """
+    return result
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8669)
+    uvicorn.run(app, host="0.0.0.0", port=8669, reload=True)

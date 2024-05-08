@@ -5,3 +5,4 @@
 !transcribe*.py
 !environment.yml
 !config.ini.example
+!whisper_processor.py
