@@ -13,7 +13,7 @@ def process_audio(wav_file, model_name="base.en"):
     :raises: Exception if an error occurs during processing
     """
 
-    model = f"./models/ggml-{model_name}.bin"
+    model = f"./whisper/models/{model_name}_acft_q8_0.bin"
 
     # Check if the file exists
     if not os.path.exists(model):
@@ -24,7 +24,7 @@ def process_audio(wav_file, model_name="base.en"):
     if not os.path.exists(wav_file):
         raise FileNotFoundError(f"WAV file not found: {wav_file}")
 
-    full_command = f"./main -m {model} -f {wav_file} -np -nt"
+    full_command = f"./whisper/main -m {model} -f {wav_file} -nt -t 1 -np -ng -nf -bo 1 -bs 1 -ac 512"
 
     # Execute the command
     process = subprocess.Popen(
